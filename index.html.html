@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.json">
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js");
+  }
+</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Minimal Gym Planner</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #0d0d0d;
+      color: #f1f1f1;
+      margin: 0;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin: 20px 0 10px;
+      color: #00e676;
+      letter-spacing: 1px;
+    }
+
+    h3 {
+      font-weight: 500;
+      margin: 16px 0;
+      color: #ccc;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 900px;
+      margin: 0 auto 60px;
+    }
+
+    /* Dashboard tiles */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 14px;
+      margin: 20px 0;
+    }
+
+    .tile {
+      background: #141414;
+      border-radius: 14px;
+      padding: 20px 10px;
+      font-weight: 600;
+      color: #f1f1f1;
+      cursor: pointer;
+      transition: 0.25s ease;
+      box-shadow: 0 0 12px rgba(0,230,118,0.1);
+    }
+
+    .tile:hover {
+      background: #1e1e1e;
+      transform: scale(1.05);
+    }
+
+    .tile span {
+      display: block;
+      font-size: 1.1rem;
+      margin-top: 8px;
+    }
+
+    .tile-icon {
+      font-size: 1.8rem;
+      color: #00e676;
+    }
+
+    /* Exercise Card */
+    .exercise {
+      background: #141414;
+      padding: 18px;
+      margin: 18px 0;
+      border-radius: 14px;
+      box-shadow: 0 0 20px rgba(0, 230, 118, 0.1);
+    }
+
+    .exercise h4 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #fff;
+      margin: 0 0 10px;
+    }
+
+    .exercise img {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 10px;
+      display: block;
+      margin: 10px auto;
+    }
+
+    .inputBox {
+      margin-top: 12px;
+      padding: 14px;
+      background: #1c1c1c;
+      border-radius: 8px;
+    }
+
+    .inputBox input {
+      width: 60px;
+      text-align: center;
+      padding: 6px;
+      margin: 0 6px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+    }
+
+    .uploadControls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    /* Floating Timer */
+    .floating-timer {
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      background: rgba(20,20,20,0.95);
+      padding: 10px 14px;
+      border-radius: 10px;
+      box-shadow: 0 0 12px rgba(0,230,118,0.3);
+      z-index: 999;
+      text-align: center;
+    }
+
+    .floating-timer button {
+      background: #00e676;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .floating-timer button:hover {
+      background: #1de9b6;
+    }
+
+    .floating-timer p {
+      margin: 0;
+      font-size: 14px;
+      font-weight: bold;
+      color: #00e676;
+    }
+
+    /* 📱 Mobile adjustments */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.6rem; }
+      .exercise img { max-width: 100%; }
+      .inputBox input { width: 50px; }
+      .floating-timer { bottom: 10px; right: 10px; padding: 8px 10px; }
+      .floating-timer button { font-size: 12px; padding: 6px 10px; }
+      .floating-timer p { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏋️ Gym Planner</h1>
+    <h3>Select a Muscle Group</h3>
+    <div class="dashboard" id="dashboard">
+      <div class="tile" onclick="showRoutine('Chest')"><div class="tile-icon">💪</div><span>Chest</span></div>
+      <div class="tile" onclick="showRoutine('Back')"><div class="tile-icon">🦾</div><span>Back</span></div>
+      <div class="tile" onclick="showRoutine('Shoulders')"><div class="tile-icon">🏋️‍♂️</div><span>Shoulders</span></div>
+      <div class="tile" onclick="showRoutine('Biceps')"><div class="tile-icon">💥</div><span>Biceps</span></div>
+      <div class="tile" onclick="showRoutine('Triceps')"><div class="tile-icon">🔥</div><span>Triceps</span></div>
+      <div class="tile" onclick="showRoutine('Legs')"><div class="tile-icon">🦵</div><span>Legs</span></div>
+      <div class="tile" onclick="showRoutine('Forearms')"><div class="tile-icon">✊</div><span>Forearms</span></div>
+    </div>
+
+    <div id="plan"></div>
+  </div>
+
+  <!-- Floating Timer -->
+  <div class="floating-timer">
+    <button onclick="startTimer()">⏱ Start 1m</button>
+    <p id="countdown">Ready</p>
+  </div>
+
+  <script>
+    const routines = {
+      Chest: [
+        { name: "Dumbbell Bench Press" },
+        { name: "Incline Dumbbell Press" },
+        { name: "Dumbbell Flyes" },
+        { name: "Standing Dumbbell Chest Fly" }
+      ],
+      Back: [
+        { name: "One-Arm Dumbbell Row" },
+        { name: "Dumbbell Deadlift" },
+        { name: "Dumbbell Pullover" },
+        { name: "Incline Shrugs" }
+      ],
+      Shoulders: [
+        { name: "Dumbbell Shoulder Press" },
+        { name: "Lateral Raise" },
+        { name: "Rear Delt Raise" },
+        { name: "Shrugs" }
+      ],
+      Biceps: [
+        { name: "Dumbbell Curl" },
+        { name: "Hammer Curl" },
+        { name: "Concentration Curl" }
+      ],
+      Triceps: [
+        { name: "Overhead Dumbbell Extension" },
+        { name: "Close-Grip Dumbbell Press" },
+        { name: "Dumbbell Skull Crushers" },
+        { name: "Dumbbell Kickback" }
+      ],
+      Legs: [
+        { name: "Dumbbell Squat" },
+        { name: "Dumbbell Lunge" },
+        { name: "Romanian Deadlift" },
+        { name: "Standing Calf Raise" }
+      ],
+      Forearms: [
+        { name: "Wrist Curl" },
+        { name: "Reverse Wrist Curl" },
+        { name: "Farmer’s Carry" }
+      ]
+    };
+
+    const PLACEHOLDER = "https://dummyimage.com/600x400/222/aaa&text=Upload+Photo";
+
+    function showRoutine(muscleGroup){
+      const plan = document.getElementById("plan");
+      document.getElementById("dashboard").style.display = "none"; // hide dashboard
+      plan.innerHTML = `
+        <button onclick="goBack()" style="margin:15px; background:#1c1c1c; color:#ccc; border:none; padding:8px 14px; border-radius:8px; cursor:pointer;">⬅ Back to Dashboard</button>
+        <h2>${muscleGroup} Workout</h2>
+      `;
+      routines[muscleGroup].forEach((ex,i)=>{
+        const keyBase = `${muscleGroup}-${i}`;
+        const sets = localStorage.getItem(`${keyBase}-sets`) || 3;
+        const reps = localStorage.getItem(`${keyBase}-reps`) || 12;
+        const photo = localStorage.getItem(`${keyBase}-photo`) || PLACEHOLDER;
+
+        const html = `
+          <div class="exercise">
+            <h4>${ex.name}</h4>
+            <img id="img-${keyBase}" src="${photo}" alt="${ex.name}">
+            <div class="uploadControls">
+              <label class="secondary">
+                <input type="file" accept="image/*" style="display:none"
+                       onchange="handlePhoto('${keyBase}', this.files[0])">
+                📷 Upload
+              </label>
+              <button class="secondary" onclick="removePhoto('${keyBase}')">🗑 Remove</button>
+              <button class="secondary" onclick="openYouTube('${ex.name}')">▶ YouTube</button>
+            </div>
+            <div class="inputBox">
+              Sets: <input type="number" id="sets-${keyBase}" value="${sets}" min="1" max="10">
+              Reps: <input type="number" id="reps-${keyBase}" value="${reps}" min="1" max="50">
+              <button onclick="save('${keyBase}')">💾 Save</button>
+            </div>
+          </div>
+        `;
+        plan.insertAdjacentHTML("beforeend", html);
+      });
+    }
+
+    function goBack(){
+      document.getElementById("dashboard").style.display = "grid";
+      document.getElementById("plan").innerHTML = "";
+    }
+
+    function save(key){
+      localStorage.setItem(`${key}-sets`, document.getElementById(`sets-${key}`).value);
+      localStorage.setItem(`${key}-reps`, document.getElementById(`reps-${key}`).value);
+    }
+
+    function handlePhoto(key, file){
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const base64 = reader.result;
+        document.getElementById(`img-${key}`).src = base64;
+        localStorage.setItem(`${key}-photo`, base64);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removePhoto(key){
+      localStorage.removeItem(`${key}-photo`);
+      document.getElementById(`img-${key}`).src=PLACEHOLDER;
+    }
+
+    function openYouTube(exName){
+      const q=encodeURIComponent(exName+" exercise");
+      window.open(`https://www.youtube.com/results?search_query=${q}`,"_blank");
+    }
+
+    function startTimer(){
+      let t=60, el=document.getElementById("countdown");
+      el.textContent="Rest: 60s";
+      const id=setInterval(()=>{
+        t--; el.textContent=`Rest: ${t}s`;
+        if(t<=0){clearInterval(id); el.textContent="✅ Done";}
+      },1000);
+    }
+  </script>
+</body>
+</html>
